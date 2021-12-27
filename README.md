@@ -4,7 +4,7 @@
 
 #### JPA
 
-##### ##To## Mapping
+##### ##To## Mapping 
 
 ```java
 // ManyToOne
