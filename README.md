@@ -1,10 +1,149 @@
 # 2021
 
-### 개발
+## 개발
 
-#### Java
+### Java
 
-##### Spring Boot
+#### Stream
+
+스트림은 데이터의 흐름이다. 배열 또는 컬렉션 인스턴스에 함수 여러 개를 조합하여 원하는 형태로 가공된 결과를 얻을 수 있다. 또 람다를 이용해서 코드를 간결하게 표현할 수 있다. 즉, 배열과 컬렉션을 함수형으로 처리하는 것.
+
+또 간단하게 병렬처리(*multi-threading*)가 가능하다. 하나의 작업을 둘 이상의 작업으로 나눠서 동시에 진행하는 것을 병렬 처리(*parallel processing*)라고 한다. 쓰레드를 이용해 많은 요소들을 빠르게 처리할 수 있다.
+*병렬 처리를 작업할때 collect 의 사용은 적합하지 않다. (stream 의 collection을 합치는 작업의 부담이 크다)*
+
+##### examples
+
+`Map<String, Long>` 에서 빈도 높은 단어 top 10
+
+```java
+List<String> topTen = freq.keySet()
+    .stream()
+    .sorted(Comparator.comparing(freq::get).reversed())
+    .limit(10)
+    .collect(Collectors.toList());
+```
+
+총 무게를 구한다.
+
+```java
+int sum = widgets.stream()
+  .filter(w -> w.getColor() == RED)
+  .mapToInt(w -> w.getWeight())
+  .sum();
+```
+
+###### collect 사용
+
+```java
+// List<People>에서 사람들의 이름만 뽑아 리스트로 수집한다
+List<String> list = people.stream()
+    .map(Person::getName)
+    .collect(Collectors.toList());
+
+// List<People>에서 이름만 뽑아 TreeSet 으로 수집한다
+Set<String> set = people.stream()
+    .map(Person::getName)
+    .collect(Collectors.toCollection(TreeSet::new));
+
+// 리스트의 원소들을 콤마로 구분된 하나의 String으로 수집한다.
+String joined = things.stream()
+    .map(Object::toString)
+    .collect(Collectors.joining(", "));
+
+// 모든 직원 급여의 총합을 구한다
+int total = employees.stream()
+    .collect(Collectors.summingInt(Employee::getSalary));
+
+// 부서별 직원 목록을 만든다
+Map<Department, List<Employee>> byDept = employees.stream()
+    .collect(Collectors.groupingBy(Employee::getDepartment));
+
+// 부서별 급여 합계를 구한다
+Map<Department, Integer> totalByDept = employees.stream()
+    .collect(
+        Collectors.groupingBy(
+            Employee::getDepartment,
+            Collectors.summingInt(Employee::getSalary)
+        )
+    );
+
+// PASS한 학생과 FAIL한 학생 리스트를 따로 수집한다
+Map<Boolean, List<Student>> passingFailing = students.stream()
+    .collect(Collectors.partitioningBy(s -> s.getGrade() >= PASS_THRESHOLD));
+```
+
+###### flatMap 사용
+
+중첩 구조를 제거하여 단일 컬렉션으로 만들어준다. (flattening)
+
+```java
+List<String> words = List.of("Cat", "Dog");
+List<String> uniq = words.stream()
+    .map(word -> word.split(""))
+    .flatMap(Arrays::stream)
+    .distinct()
+    .collect(Collectors.toList());
+// 결과는 ["C", "a", "t", "D", "o", "g"]
+
+List<Integer> flat = Stream.of(10, 20, 30)
+    .flatMap(x -> Stream.of(x, x + 1, x + 2))
+    .collect(Collectors.toList());
+// 결과는 [10, 11, 12, 20, 21, 22, 30, 31, 32]
+```
+
+###### iterate 사용
+
+```java
+// 출력
+Stream.iterate(0, n -> n + 1)
+    .limit(10)
+    .forEach(n -> System.out.printf("%d ", n));
+// 0 1 2 3 4 5 6 7 8 9
+
+//피보나치 수열
+Stream.iterate(new int[]{0, 1}, n -> new int[]{ n[1], n[0] + n[1]})
+    .limit(20)
+    .forEach(n -> System.out.printf("%d ", n[1]));
+// 1 1 2 3 5 8 13 21 34 55 89 144 233 377 610 987 1597 2584 4181 6765
+```
+
+###### 조건걸기
+
+filter 외에, takeWhile , dropWhile 을 사용해 조건을 걸어 필터링할 수 있다.
+
+***filter***
+
+```java
+// 모든 항목을 루프하여 조건에 맞는 아이템을 수집한다.
+List<Integer> numbers = Stream.of(11, 16, 30, -8, 7, 4, 100)
+    .filter(n -> n > 10)
+    .collect(Collectors.toList());
+// 11, 16, 30, 100
+```
+
+***takeWhile***
+
+```java
+//순서대로 아이템을 수집하다가 Predicate가 처음으로 false가 나오면 멈춘다(short circuit).
+List<Integer> numbers = Stream.of(11, 16, 30, -8, 7, 4, 100)
+    .takeWhile(n -> n > 10)
+    .collect(Collectors.toList());
+// 11, 16, 30
+```
+
+***dropWhile***
+
+```java
+// Predicate가 처음으로 false를 리턴한 이후로 모두 수집한다. 그 이전은 모두 버린다.
+List<Integer> numbers = Stream.of(11, 16, 30, -8, 7, 4, 100, -10)
+    .dropWhile(n -> n > 10)
+    .collect(Collectors.toList());
+// -8, 7, 4, 100, -10
+```
+
+
+
+#### Spring Boot
 
 ###### CommandLineRunner
 
@@ -38,7 +177,7 @@ public class MyThread implements Runnable {
 
 #### JPA
 
-##### ##To## Mapping 
+###### ##To## Mapping 
 
 ```java
 // ManyToOne
@@ -59,7 +198,7 @@ private DasGateway gateway;
 private List<Das> dasList = new ArrayList<Das>();
 ```
 
-#####  Json , Array 매핑
+######  Json , Array 매핑
 
 ```java
 @TypeDef(name = "json", typeClass = JsonType.class) // postgre Json to Java String
@@ -75,7 +214,7 @@ private List<Das> dasList = new ArrayList<Das>();
 
 
 
-##### Enum Type 추가
+###### Enum Type 추가
 
 ###### Java 
 
@@ -96,7 +235,7 @@ alter type var_type owner to hpcb;
 CREATE CAST (character varying AS var_type) WITH INOUT AS IMPLICIT;
 ```
 
-#### JS
+### JS
 
 ###### Declare Date.format 
 
@@ -188,7 +327,7 @@ dataBound: function () {
 
 
 
-#### SQL
+### SQL
 
 
 
@@ -238,7 +377,7 @@ Result
 
 
 
-### 기타
+## 기타
 
 #### Oracle DB 에디션 변경
 
