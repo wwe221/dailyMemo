@@ -1,17 +1,16 @@
-# 2021
+# 개발
 
-## 개발
+## Java
 
-### Java
+### Stream
 
-#### Stream
-
-스트림은 데이터의 흐름이다. 배열 또는 컬렉션 인스턴스에 함수 여러 개를 조합하여 원하는 형태로 가공된 결과를 얻을 수 있다. 또 람다를 이용해서 코드를 간결하게 표현할 수 있다. 즉, 배열과 컬렉션을 함수형으로 처리하는 것.
-
+스트림은 **데이터의 흐름**이다. 배열 또는 컬렉션 인스턴스에 함수 여러 개를 조합하여 원하는 형태로 가공된 결과를 얻을 수 있다. 또 람다를 이용해서 코드를 간결하게 표현할 수 있다. 즉, 배열과 컬렉션을 함수형으로 처리하는 것.
 또 간단하게 병렬처리(*multi-threading*)가 가능하다. 하나의 작업을 둘 이상의 작업으로 나눠서 동시에 진행하는 것을 병렬 처리(*parallel processing*)라고 한다. 쓰레드를 이용해 많은 요소들을 빠르게 처리할 수 있다.
 *병렬 처리를 작업할때 collect 의 사용은 적합하지 않다. (stream 의 collection을 합치는 작업의 부담이 크다)*
 
-##### examples
+새로운 데이터 흐름을 만들기 때문에 **원본데이터를 변경하지 않고** 하나의 스트림이 끝나면 사라지는 **일회용** 흐름이기 때문에 끝난뒤 다시 호출할때 에러가 발생한다.
+
+#### 가공 examples
 
 `Map<String, Long>` 에서 빈도 높은 단어 top 10
 
@@ -32,47 +31,32 @@ int sum = widgets.stream()
   .sum();
 ```
 
-###### collect 사용
+##### Comparator 사용 정렬
 
 ```java
-// List<People>에서 사람들의 이름만 뽑아 리스트로 수집한다
-List<String> list = people.stream()
-    .map(Person::getName)
-    .collect(Collectors.toList());
+// Class 의 attribute (durationTime) 를 기준으로 정렬
+// Comparator를 이용하여 정렬할 수 있다.
+List<WorkOrderVO> list  = woService.readWorkOrderAll();
+var a = list.stream()
+    .sorted((s1 ,s2)-> (int) (s1.getDurationTime() - s2.getDurationTime())).collect(Collectors.toList());
 
-// List<People>에서 이름만 뽑아 TreeSet 으로 수집한다
-Set<String> set = people.stream()
-    .map(Person::getName)
-    .collect(Collectors.toCollection(TreeSet::new));
+var b = list.stream()
+    .sorted(Comparator.comparing(WorkOrderVO::getDurationTime).reversed()); 
 
-// 리스트의 원소들을 콤마로 구분된 하나의 String으로 수집한다.
-String joined = things.stream()
-    .map(Object::toString)
-    .collect(Collectors.joining(", "));
-
-// 모든 직원 급여의 총합을 구한다
-int total = employees.stream()
-    .collect(Collectors.summingInt(Employee::getSalary));
-
-// 부서별 직원 목록을 만든다
-Map<Department, List<Employee>> byDept = employees.stream()
-    .collect(Collectors.groupingBy(Employee::getDepartment));
-
-// 부서별 급여 합계를 구한다
-Map<Department, Integer> totalByDept = employees.stream()
-    .collect(
-        Collectors.groupingBy(
-            Employee::getDepartment,
-            Collectors.summingInt(Employee::getSalary)
-        )
-    );
-
-// PASS한 학생과 FAIL한 학생 리스트를 따로 수집한다
-Map<Boolean, List<Student>> passingFailing = students.stream()
-    .collect(Collectors.partitioningBy(s -> s.getGrade() >= PASS_THRESHOLD));
 ```
 
-###### flatMap 사용
+##### map
+
+기존 Stream 요소들을 새로운 Stream으로 변환한다.
+
+```java
+List<PerformanceVO> a = workOrderService.readPerformAll();
+Stream<WorkOrderVO> b = a.stream().map(PerformanceVO::getWorkOrder);
+```
+
+
+
+##### flatMap 사용
 
 중첩 구조를 제거하여 단일 컬렉션으로 만들어준다. (flattening)
 
@@ -91,7 +75,7 @@ List<Integer> flat = Stream.of(10, 20, 30)
 // 결과는 [10, 11, 12, 20, 21, 22, 30, 31, 32]
 ```
 
-###### iterate 사용
+##### iterate 사용
 
 ```java
 // 출력
@@ -107,7 +91,7 @@ Stream.iterate(new int[]{0, 1}, n -> new int[]{ n[1], n[0] + n[1]})
 // 1 1 2 3 5 8 13 21 34 55 89 144 233 377 610 987 1597 2584 4181 6765
 ```
 
-###### 조건걸기
+##### 조건걸기
 
 filter 외에, takeWhile , dropWhile 을 사용해 조건을 걸어 필터링할 수 있다.
 
@@ -141,9 +125,100 @@ List<Integer> numbers = Stream.of(11, 16, 30, -8, 7, 4, 100, -10)
 // -8, 7, 4, 100, -10
 ```
 
+#### 결과 만들기
+
+##### collect 사용
+
+원하는 데이터를 원하는 기준으로 수집한다.
+
+###### Collectors.toList()
+
+```java
+// List<People>에서 사람들의 이름만 뽑아 리스트로 수집한다
+List<String> list = people.stream()
+    .map(Person::getName)
+    .collect(Collectors.toList());
+```
+
+###### Collectors.toCollection()
+
+```java
+// List<People>에서 이름만 뽑아 TreeSet 으로 수집한다
+Set<String> set = people.stream()
+    .map(Person::getName)
+    .collect(Collectors.toCollection(TreeSet::new));
+```
+
+###### Collectors.joining()
+
+```java
+// 리스트의 원소들을 콤마로 구분된 하나의 String으로 수집한다.
+String joined = things.stream()
+    .map(Object::toString)
+    .collect(Collectors.joining(", "));
+```
+
+###### Collectors.summarizingInt()
+
+```java
+//averaging() , summing()  의 결과가 (합계 평균) 모두 필요하다면 사용한다.
+IntSummaryStatistics statistics = 
+ productList.stream()
+  .collect(Collectors.summarizingInt(Product::getAmount));
+// 결과 : IntSummaryStatistics {count=5, sum=86, min=13, average=17.200000, max=23}
+```
+
+###### Collectors.groupingBy()
+
+특정 조건으로 요소들을 그룹지을수 있다.
+
+```java
+// 부서별 직원 목록을 만든다
+Map<Department, List<Employee>> byDept = employees.stream()
+    .collect(Collectors.groupingBy(Employee::getDepartment));
+
+// 부서별 급여 합계를 구한다
+Map<Department, Integer> totalByDept = employees.stream()
+    .collect(
+        Collectors.groupingBy(
+            Employee::getDepartment,
+            Collectors.summingInt(Employee::getSalary)
+        )
+    );
+```
+
+###### Collectors.partitioningBy()
+
+`partitioningBy` 은 함수형 인터페이스 Predicate 를 받는다. Predicate 는 인자를 받아서 boolean 값을 리턴한다.
+
+```java
+// PASS한 학생과 FAIL한 학생 리스트를 따로 수집한다
+Map<Boolean, List<Student>> passingFailing = students.stream()
+    .collect(Collectors.partitioningBy(s -> s.getGrade() >= PASS_THRESHOLD));
+```
+
+##### matching 사용
+
+매칭은 조건식 람다 Predicate 를 받아서 해당 조건을 만족하는 요소가 있는지 체크한 결과를 리턴한다.  총 세가지 메소드가 있다.
+
+- 하나라도 조건을 만족하는 요소가 있는지(*anyMatch*)
+- 모두 조건을 만족하는지(*allMatch*)
+- 모두 조건을 만족하지 않는지(*noneMatch*)
+
+```java
+List<String> names = Arrays.asList("Eric", "Elena", "Java");
+
+boolean anyMatch = names.stream()
+  .anyMatch(name -> name.contains("a"));
+boolean allMatch = names.stream()
+  .allMatch(name -> name.length() > 3);
+boolean noneMatch = names.stream()
+  .noneMatch(name -> name.endsWith("s"));
+```
 
 
-#### Spring Boot
+
+### Spring Boot
 
 ###### CommandLineRunner
 
@@ -175,7 +250,7 @@ public class MyThread implements Runnable {
 
 
 
-#### JPA
+### JPA
 
 ###### ##To## Mapping 
 
@@ -235,7 +310,7 @@ alter type var_type owner to hpcb;
 CREATE CAST (character varying AS var_type) WITH INOUT AS IMPLICIT;
 ```
 
-### JS
+## JS
 
 ###### Declare Date.format 
 
@@ -325,11 +400,15 @@ dataBound: function () {
     });
 ```
 
+## DB
 
+#### Connection Pool
+
+\- DB와 연결된 커넥션(connection)을 미리 생성해서 풀(pool) 속에 저장해 두고 있다가 필요할 때에 가져다 쓰고 반환한다.
+
+\- 미리 생성해두기 때문에 데이터베이스에 부하를 줄이고 유동적으로 연결을 관리 할 수 있다.
 
 ### SQL
-
-
 
 ###### 하나의 copcode 에서 각 column 들 중  0이 아닌 최신 값 조회
 
@@ -377,7 +456,7 @@ Result
 
 
 
-## 기타
+# 기타
 
 #### Oracle DB 에디션 변경
 
